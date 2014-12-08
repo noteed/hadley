@@ -37,9 +37,16 @@ main = do
     $ flip (document projectName) (return ())
     $ do
       H.strong $ H.toHtml projectName
-      H.div $ H.a ! A.href (H.toValue projectREADME) $ "README.md"
-      H.div $ H.a ! A.href (H.toValue $ "/raw/" ++ projectREADME) $ "README.md (raw)"
-      H.div $ H.a ! A.href "/hlint/bin/hadley.hs" $ "bin/hadley.hs (hlint)"
+      H.div $ do
+        H.a ! A.href (H.toValue projectREADME) $ "README.md"
+        " "
+        H.a ! A.href (H.toValue $ "/raw/" ++ projectREADME) $ "raw"
+      H.div $ do
+        H.a ! A.href "/bin/hadley.hs" $ "bin/hadley.hs"
+        " "
+        H.a ! A.href "/hlint/bin/hadley.hs" $ "hlint"
+        " "
+        H.a ! A.href "/raw/bin/hadley.hs" $ "raw"
 
   content <- readFile projectREADME
 
@@ -54,6 +61,19 @@ main = do
   -- Raw README.
   createDirectoryIfMissing True ("_static" </> "raw")
   writeFile ("_static" </> "raw" </> projectREADME) content
+
+  content' <- readFile ("bin" </> "hadley.hs")
+
+  -- Render the script.
+  createDirectoryIfMissing True ("_static" </> "bin" </> "hadley.hs")
+  writeFile ("_static" </> "bin" </> "hadley.hs" </> "index.html")
+    $ renderHtml
+    $ wrapHs project
+    $ H.pre (H.toHtml content')
+
+  -- Raw script.
+  createDirectoryIfMissing True ("_static" </> "raw" </> "bin")
+  writeFile ("_static" </> "raw" </> "bin" </> "hadley.hs") content'
 
   -- HLint output.
   (flags, classify, hint) <- autoSettings
@@ -73,6 +93,12 @@ wrapReadme Project{..} content = flip (document projectName) (return ()) $ do
 renderIdeas :: Project -> [Idea] -> Html
 renderIdeas Project{..} ideas = flip (document projectName) (return ()) $ do
   H.div $ H.strong $ H.toHtml ("HLint" :: Text)
+  H.div $ do
+    H.strong "bin/hadley.hs"
+    " "
+    H.a ! A.href "/bin/hadley.hs" $ "src"
+    " "
+    H.a ! A.href "/raw/bin/hadley.hs" $ "raw"
   if null ideas
     then H.div "No suggestions."
     else H.div $ mapM_ (H.div . htmlIdea) ideas
@@ -93,6 +119,15 @@ htmlSrcSpan SrcSpan{..} =
     H.toHtml srcSpanFilename -- TODO Link.
     ":" >> H.toHtml (show srcSpanStartLine)
     ":" >> H.toHtml (show srcSpanStartColumn)
+
+wrapHs Project{..} content = flip (document projectName) (return ()) $ do
+  H.div $ do
+    H.strong "bin/hadley.hs"
+    " "
+    H.a ! A.href "/hlint/bin/hadley.hs" $ "hlint"
+    " "
+    H.a ! A.href "/raw/bin/hadley.hs" $ "raw"
+  H.div content
 
 document :: Text -> Html -> Html -> Html
 document title content menu = do
