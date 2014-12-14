@@ -1,0 +1,59 @@
+@import url(http://fonts.googleapis.com/css?family=PT+Sans|PT+Sans:b|PT+Sans:i);
+
+html {
+  min-width: 900px;
+}
+
+body {
+  color: #333;
+  background: #fff;
+  font-family: "PT Sans", sans-serif;
+  font-size: 18px;
+  width: 900px;
+  margin: 1em;
+}
+
+header, footer {
+  font-size: small;
+}
+
+a {
+  color: #e00;
+}
+
+a:not(:hover) {
+  text-decoration: none;
+}
+
+ul {
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+}
+
+header a, footer a {
+  color: #999;
+}
+
+table, thead, tbody, tr, td, pre {
+  margin: 0;
+  padding: 0;
+}
+
+tr > td:not(:last-of-type) {
+  padding: 0 2em 0 0;
+}
+
+table {
+  border-spacing: 0;
+}
+
+caption {
+  font-size: 16px;
+  font-style: italic;
+  color: #999;
+}
+
+code, pre {
+  font-size: 15px;
+}
