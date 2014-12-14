@@ -7,6 +7,7 @@ import Data.Text (Text)
 import Language.Haskell.Exts.SrcLoc (SrcSpan(..))
 import Language.Haskell.HLint3
 import System.Directory (createDirectoryIfMissing)
+import System.Environment (getArgs)
 import System.FilePath ((</>))
 import Text.Blaze.Html5 (Html, (!))
 import qualified Text.Blaze.Html5 as H
@@ -27,6 +28,12 @@ getProject = return Project
 
 main :: IO ()
 main = do
+  args <- getArgs
+  case args of
+    [] -> main' Nothing
+    [refresh] -> main' (Just $ read refresh)
+
+main' mrefresh = do
   putStrLn "Hadley."
   project@Project{..} <- getProject
   createDirectoryIfMissing True "_static"
@@ -34,7 +41,7 @@ main = do
   -- Made-up index.html.
   writeFile ("_static" </> "index.html")
     $ renderHtml
-    $ flip (document projectName) (return ())
+    $ flip (document mrefresh projectName) (return ())
     $ do
       H.strong $ H.toHtml projectName
       H.div $ do
@@ -54,7 +61,7 @@ main = do
   createDirectoryIfMissing True ("_static" </> projectREADME)
   writeFile ("_static" </> projectREADME </> "index.html")
     $ renderHtml
-    $ wrapReadme project
+    $ wrapReadme mrefresh project
     $ writeHtml def { writerHtml5 = True }
     $ readMarkdown def content
 
@@ -68,7 +75,7 @@ main = do
   createDirectoryIfMissing True ("_static" </> "bin" </> "hadley.hs")
   writeFile ("_static" </> "bin" </> "hadley.hs" </> "index.html")
     $ renderHtml
-    $ wrapHs project
+    $ wrapHs mrefresh project
     $ H.pre (H.toHtml content')
 
   -- Raw script.
@@ -81,17 +88,17 @@ main = do
   createDirectoryIfMissing True ("_static" </> "hlint" </> "bin")
   writeFile ("_static" </> "hlint" </> "bin/hadley.hs")
     $ renderHtml
-    $ renderIdeas project
+    $ renderIdeas mrefresh project
     $ applyHints classify hint [m]
 
-wrapReadme Project{..} content = flip (document projectName) (return ()) $ do
+wrapReadme mrefresh Project{..} content = flip (document mrefresh projectName) (return ()) $ do
   H.div $ do
     H.strong $ H.toHtml projectREADME
     H.a ! A.href (H.toValue $ "/raw/" ++ projectREADME) $ "raw"
   H.div content
 
-renderIdeas :: Project -> [Idea] -> Html
-renderIdeas Project{..} ideas = flip (document projectName) (return ()) $ do
+renderIdeas :: Maybe Int -> Project -> [Idea] -> Html
+renderIdeas mrefresh Project{..} ideas = flip (document mrefresh projectName) (return ()) $ do
   H.div $ H.strong $ H.toHtml ("HLint" :: Text)
   H.div $ do
     H.strong "bin/hadley.hs"
@@ -120,7 +127,7 @@ htmlSrcSpan SrcSpan{..} =
     ":" >> H.toHtml (show srcSpanStartLine)
     ":" >> H.toHtml (show srcSpanStartColumn)
 
-wrapHs Project{..} content = flip (document projectName) (return ()) $ do
+wrapHs mrefresh Project{..} content = flip (document mrefresh projectName) (return ()) $ do
   H.div $ do
     H.strong "bin/hadley.hs"
     " "
@@ -129,14 +136,17 @@ wrapHs Project{..} content = flip (document projectName) (return ()) $ do
     H.a ! A.href "/raw/bin/hadley.hs" $ "raw"
   H.div content
 
-document :: Text -> Html -> Html -> Html
-document title content menu = do
+document :: Maybe Int -> Text -> Html -> Html -> Html
+document mrefresh title content menu = do
   H.docType
   html_
   H.meta ! A.charset "utf-8"
   H.title $ H.toHtml title
   H.style "@import url(/style.css);"
-  H.meta ! A.httpEquiv "refresh" ! A.content "5"
+  maybe
+    (return ())
+    (\r -> H.meta ! A.httpEquiv "refresh" ! A.content (H.toValue $ show r))
+    mrefresh
 
   H.header $ H.a ! A.href "/" $ H.toHtml title
   H.div ! A.id "main" $ content
