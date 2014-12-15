@@ -17,3 +17,7 @@ image](https://github.com/noteed/reesd-stack) and can be built with
     > docker build -t images.reesd.com/reesd/stack-pandoc images/stack-pandoc
 
 (Rename the image and the `FROM` instruction as appropriate.)
+
+## 80 columns
+
+    123456789 123456789 123456789 123456789 123456789 123456789 123456789 1234567890

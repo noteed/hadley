@@ -4,6 +4,7 @@ module Main (main) where
 
 import Data.Default
 import Data.Text (Text)
+import qualified Data.Text.Lazy.IO as T
 import Language.Haskell.Exts.SrcLoc (SrcSpan(..))
 import Language.Haskell.HLint3
 import System.Directory (createDirectoryIfMissing)
@@ -12,7 +13,8 @@ import System.FilePath ((</>))
 import Text.Blaze.Html5 (Html, (!))
 import qualified Text.Blaze.Html5 as H
 import qualified Text.Blaze.Html5.Attributes as A
-import Text.Blaze.Html.Renderer.Pretty (renderHtml)
+import Text.Blaze.Html.Renderer.Text (renderHtml)
+-- import Text.Blaze.Html.Renderer.Pretty (renderHtml)
 import Text.Pandoc (readMarkdown, writeHtml)
 import Text.Pandoc.Options (writerHtml5)
 
@@ -39,7 +41,7 @@ main' mrefresh = do
   createDirectoryIfMissing True "_static"
 
   -- Made-up index.html.
-  writeFile ("_static" </> "index.html")
+  T.writeFile ("_static" </> "index.html")
     $ renderHtml
     $ flip (document mrefresh projectName) (return ())
     $ do
@@ -59,7 +61,7 @@ main' mrefresh = do
 
   -- Render the README.
   createDirectoryIfMissing True ("_static" </> projectREADME)
-  writeFile ("_static" </> projectREADME </> "index.html")
+  T.writeFile ("_static" </> projectREADME </> "index.html")
     $ renderHtml
     $ wrapReadme mrefresh project
     $ writeHtml def { writerHtml5 = True }
@@ -73,10 +75,10 @@ main' mrefresh = do
 
   -- Render the script.
   createDirectoryIfMissing True ("_static" </> "bin" </> "hadley.hs")
-  writeFile ("_static" </> "bin" </> "hadley.hs" </> "index.html")
+  T.writeFile ("_static" </> "bin" </> "hadley.hs" </> "index.html")
     $ renderHtml
     $ wrapHs mrefresh project
-    $ H.pre (H.toHtml content')
+    $ H.br >> H.pre (H.code $ H.toHtml content')
 
   -- Raw script.
   createDirectoryIfMissing True ("_static" </> "raw" </> "bin")
@@ -86,7 +88,7 @@ main' mrefresh = do
   (flags, classify, hint) <- autoSettings
   Right m <- parseModuleEx flags "bin/hadley.hs" Nothing
   createDirectoryIfMissing True ("_static" </> "hlint" </> "bin")
-  writeFile ("_static" </> "hlint" </> "bin/hadley.hs")
+  T.writeFile ("_static" </> "hlint" </> "bin/hadley.hs")
     $ renderHtml
     $ renderIdeas mrefresh project
     $ applyHints classify hint [m]
@@ -94,6 +96,7 @@ main' mrefresh = do
 wrapReadme mrefresh Project{..} content = flip (document mrefresh projectName) (return ()) $ do
   H.div $ do
     H.strong $ H.toHtml projectREADME
+    " "
     H.a ! A.href (H.toValue $ "/raw/" ++ projectREADME) $ "raw"
   H.div content
 
