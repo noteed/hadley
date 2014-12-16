@@ -4,6 +4,7 @@ server {
   root /usr/share/nginx/www;
   include /etc/nginx/mime.types;
   types {
+    text/plain cabal;
     text/plain md;
     text/plain hs;
   }

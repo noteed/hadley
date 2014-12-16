@@ -21,12 +21,14 @@ import Text.Pandoc.Options (writerHtml5)
 data Project = Project
   { projectName :: Text
   , projectREADME :: FilePath
+  , projectCabal :: FilePath
   }
 
 getProject :: IO Project
 getProject = return Project
   { projectName = "Hadley"
   , projectREADME = "README.md"
+  , projectCabal = "hadley.cabal"
   }
 
 main :: IO ()
@@ -58,6 +60,10 @@ main' mrefresh = do
         H.a ! A.href "/hlint/bin/hadley.hs" $ "hlint"
         " "
         H.a ! A.href "/raw/bin/hadley.hs" $ "raw"
+      H.div $ do
+        H.a ! A.href "hadley.cabal" $ "hadley.cabal"
+        " "
+        H.a ! A.href "/raw/hadley.cabal" $ "raw"
 
   content <- readFile projectREADME
 
@@ -72,6 +78,19 @@ main' mrefresh = do
   -- Raw README.
   createDirectoryIfMissing True ("_static" </> "raw")
   writeFile ("_static" </> "raw" </> projectREADME) content
+
+  contentCabal <- readFile projectCabal
+
+  -- Render the `.cabal` file.
+  createDirectoryIfMissing True ("_static" </> projectCabal)
+  T.writeFile ("_static" </> projectCabal </> "index.html")
+    $ renderHtml
+    $ wrapCabal mrefresh project
+    $ H.br >> H.pre (H.code $ H.toHtml contentCabal)
+
+  -- Raw `.cabal`.
+  createDirectoryIfMissing True ("_static" </> "raw")
+  writeFile ("_static" </> "raw" </> projectCabal) contentCabal
 
   content' <- readFile ("bin" </> "hadley.hs")
 
@@ -133,6 +152,14 @@ htmlSrcSpan SrcSpan{..} =
     H.toHtml srcSpanFilename -- TODO Link.
     ":" >> H.toHtml (show srcSpanStartLine)
     ":" >> H.toHtml (show srcSpanStartColumn)
+
+wrapCabal :: Maybe Int -> Project -> Html -> Html
+wrapCabal mrefresh Project{..} content = flip (document mrefresh projectName) (return ()) $ do
+  H.div $ do
+    H.strong "hadley.cabal"
+    " "
+    H.a ! A.href "/raw/hadley.cabal" $ "raw"
+  H.div content
 
 wrapHs :: Maybe Int -> Project -> Html -> Html
 wrapHs mrefresh Project{..} content = flip (document mrefresh projectName) (return ()) $ do
