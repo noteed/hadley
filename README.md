@@ -5,12 +5,10 @@ Hadley renders static pages for Haskell projects.
 Hadley is in development and can only render itself. Current pages include:
 
 - The README file rendered using Pandoc,
-- The raw README file,
-- The rendered Haskell code,
+- The Haskell code,
 - The output of HLint when run over Hadley's script,
-- The raw Haskell code,
-- The rendered Cabal file,
-- The raw Cabal file.
+- The Cabal file,
+- Process output.
 
 ## Docker images
 

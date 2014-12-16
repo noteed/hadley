@@ -21,6 +21,7 @@ executable hadley
                        haskell-src-exts == 1.16.*,
                        hlint == 1.9.*,
                        pandoc == 1.12.*,
+                       process == 1.1.*,
                        text == 0.11.*
   ghc-options:         -Wall
                        -fno-warn-unused-do-bind

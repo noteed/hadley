@@ -9,7 +9,9 @@ import Language.Haskell.Exts.SrcLoc (SrcSpan(..))
 import Language.Haskell.HLint3
 import System.Directory (createDirectoryIfMissing)
 import System.Environment (getArgs)
+import System.Exit (ExitCode)
 import System.FilePath ((</>))
+import System.Process (readProcessWithExitCode)
 import Text.Blaze.Html5 (Html, (!))
 import qualified Text.Blaze.Html5 as H
 import qualified Text.Blaze.Html5.Attributes as A
@@ -64,6 +66,10 @@ main' mrefresh = do
         H.a ! A.href "hadley.cabal" $ "hadley.cabal"
         " "
         H.a ! A.href "/raw/hadley.cabal" $ "raw"
+      H.div $ do
+        H.a ! A.href "ls-la.html" $ H.code "ls -la"
+        " "
+        H.a ! A.href "/raw/ls-la.txt" $ "raw"
 
   content <- readFile projectREADME
 
@@ -113,6 +119,18 @@ main' mrefresh = do
     $ renderHtml
     $ renderIdeas mrefresh project
     $ applyHints classify hint [m]
+
+  (code, out, err) <- readProcessWithExitCode
+    "ls" ["-la"] ""
+
+  -- Render ls -la.
+  T.writeFile ("_static" </> "ls-la.html")
+    $ renderHtml
+    $ wrapCommand mrefresh project
+    $ H.br >> H.pre (H.code $ H.toHtml $ out ++ err)
+
+  -- Raw ls -la.
+  writeFile ("_static" </> "raw" </> "ls-la.txt") (out ++ err)
 
 wrapReadme :: Maybe Int -> Project -> Html -> Html
 wrapReadme mrefresh Project{..} content = flip (document mrefresh projectName) (return ()) $ do
@@ -171,6 +189,14 @@ wrapHs mrefresh Project{..} content = flip (document mrefresh projectName) (retu
     H.a ! A.href "/raw/bin/hadley.hs" $ "raw"
   H.div content
 
+wrapCommand :: Maybe Int -> Project -> Html -> Html
+wrapCommand mrefresh Project{..} content = flip (document mrefresh projectName) (return ()) $ do
+  H.div $ do
+    H.strong $ H.code "ls -la"
+    " "
+    H.a ! A.href "/raw/ls-la.txt" $ "raw"
+  H.div content
+
 document :: Maybe Int -> Text -> Html -> Html -> Html
 document mrefresh title content menu = do
   H.docType
@@ -191,3 +217,14 @@ document mrefresh title content menu = do
 -- | Self-closing <html> tag.
 html_ :: Html
 html_ = H.preEscapedToHtml ("<html>" :: String)
+
+-- | Render the result of readProcessWithExitCode.
+htmlProcess cmd args input code out err = do
+  H.strong "command:"
+  H.br
+  H.code . H.toHtml $ unwords $ cmd : args
+  H.br
+  H.strong "stderr:"
+  H.pre . H.toHtml $ err
+  H.strong "stdout:"
+  H.pre . H.toHtml $ out
