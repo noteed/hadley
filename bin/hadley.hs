@@ -23,6 +23,7 @@ data Project = Project
   , projectREADME :: FilePath
   }
 
+getProject :: IO Project
 getProject = return Project
   { projectName = "Hadley"
   , projectREADME = "README.md"
@@ -35,6 +36,7 @@ main = do
     [] -> main' Nothing
     [refresh] -> main' (Just $ read refresh)
 
+main' :: Maybe Int -> IO ()
 main' mrefresh = do
   putStrLn "Hadley."
   project@Project{..} <- getProject
@@ -93,6 +95,7 @@ main' mrefresh = do
     $ renderIdeas mrefresh project
     $ applyHints classify hint [m]
 
+wrapReadme :: Maybe Int -> Project -> Html -> Html
 wrapReadme mrefresh Project{..} content = flip (document mrefresh projectName) (return ()) $ do
   H.div $ do
     H.strong $ H.toHtml projectREADME
@@ -124,12 +127,14 @@ htmlIdea Idea{..} = do
   H.div $ H.toHtml $ show ideaNote
   H.div $ H.toHtml ideaModule >> H.toHtml ideaDecl
 
+htmlSrcSpan :: SrcSpan -> Html
 htmlSrcSpan SrcSpan{..} =
   H.code $ do
     H.toHtml srcSpanFilename -- TODO Link.
     ":" >> H.toHtml (show srcSpanStartLine)
     ":" >> H.toHtml (show srcSpanStartColumn)
 
+wrapHs :: Maybe Int -> Project -> Html -> Html
 wrapHs mrefresh Project{..} content = flip (document mrefresh projectName) (return ()) $ do
   H.div $ do
     H.strong "bin/hadley.hs"
