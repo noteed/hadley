@@ -1,9 +1,9 @@
 #! /usr/bin/env bash
 
-mkdir -p artifacts
+mkdir -p _static
 docker run \
   -v `pwd`:/home/gusdev/hadley \
-  -v `pwd`/artifacts:/artifacts \
+  -v `pwd`/_static:/artifacts \
   -t -i images.reesd.com/reesd/stack-pandoc \
   sh -c \
     'cd hadley ;
