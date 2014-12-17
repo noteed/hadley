@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 module Main (main) where
@@ -5,10 +6,12 @@ module Main (main) where
 import Data.Default
 import Data.Text (Text)
 import qualified Data.Text.Lazy.IO as T
+import Data.Version (showVersion)
 import Language.Haskell.Exts.SrcLoc (SrcSpan(..))
 import Language.Haskell.HLint3
+import Paths_hadley (version)
+import System.Console.CmdArgs.Implicit hiding (def)
 import System.Directory (createDirectoryIfMissing)
-import System.Environment (getArgs)
 import System.Exit (ExitCode)
 import System.FilePath ((</>))
 import System.Process (readProcessWithExitCode)
@@ -34,14 +37,49 @@ getProject = return Project
   }
 
 main :: IO ()
-main = do
-  args <- getArgs
-  case args of
-    [] -> main' Nothing
-    [refresh] -> main' (Just $ read refresh)
+main = (runCmd =<<) $ cmdArgs $
+  modes
+    [ cmdGenerate
+    , cmdDummy
+    ]
+  &= summary versionString
+  &= program "hadley"
 
-main' :: Maybe Int -> IO ()
-main' mrefresh = do
+-- | String with the program name, version and copyright.
+versionString :: String
+versionString =
+  "hadley " ++ showVersion version ++ " - Copyright (c) 2014 Vo Minh Thu."
+
+-- | Data type representing the different command-line subcommands.
+data Cmd =
+    CmdGenerate
+  { cmdRefreshTime :: Maybe Int
+  }
+  | CmdDummy
+  deriving (Data, Typeable)
+
+-- | Create a 'Generate' command.
+cmdGenerate :: Cmd
+cmdGenerate = CmdGenerate
+  { cmdRefreshTime = def
+    &= help "Embed a HTTP meta tag with a refresh value."
+    &= explicit
+    &= name "refresh"
+  } &= help
+      "Generate static HTML pages."
+    &= explicit
+    &= name "generate"
+
+-- | Create a 'Dummy' command (used to have two sub-commands).
+cmdDummy :: Cmd
+cmdDummy = CmdDummy
+    &= help "Dummy command"
+    &= explicit
+    &= name "dummy"
+
+runCmd :: Cmd -> IO ()
+runCmd CmdGenerate{..} = do
+  let mrefresh = cmdRefreshTime
   putStrLn "Hadley."
   project@Project{..} <- getProject
   createDirectoryIfMissing True "_static"
@@ -132,6 +170,8 @@ main' mrefresh = do
   -- Raw ls -la.
   writeFile ("_static" </> "raw" </> "ls-la.txt") (out ++ err)
 
+runCmd CmdDummy{..} = putStrLn "Dummy."
+
 wrapReadme :: Maybe Int -> Project -> Html -> Html
 wrapReadme mrefresh Project{..} content = flip (document mrefresh projectName) (return ()) $ do
   H.div $ do
@@ -219,10 +259,10 @@ html_ :: Html
 html_ = H.preEscapedToHtml ("<html>" :: String)
 
 -- | Render the result of readProcessWithExitCode.
-htmlProcess cmd args input code out err = do
+htmlProcess cmd arguments input code out err = do
   H.strong "command:"
   H.br
-  H.code . H.toHtml $ unwords $ cmd : args
+  H.code . H.toHtml $ unwords $ cmd : arguments
   H.br
   H.strong "stderr:"
   H.pre . H.toHtml $ err

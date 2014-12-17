@@ -13,7 +13,8 @@ build-type:          Simple
 executable hadley
   hs-source-dirs:      bin
   main-is:             hadley.hs
-  build-depends:       base == 4.*,
+  build-depends:       cmdargs == 0.10.*,
+                       base == 4.*,
                        blaze-html == 0.5.*,
                        data-default == 0.5.*,
                        directory == 1.1.*,
