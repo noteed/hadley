@@ -13,7 +13,9 @@ import Language.Haskell.HLint3
 import Paths_hadley (getDataFileName, version)
 import System.Console.CmdArgs.Implicit hiding (def)
 import System.Directory
-  (copyFile, createDirectoryIfMissing, doesFileExist, getHomeDirectory)
+  ( copyFile, createDirectoryIfMissing, doesFileExist, getHomeDirectory
+  , setCurrentDirectory
+  )
 import System.Exit (exitFailure, ExitCode(..))
 import System.FilePath ((</>))
 import System.Process (readProcessWithExitCode)
@@ -45,7 +47,8 @@ getProject = return Project
 main :: IO ()
 main = (runCmd =<<) $ cmdArgs $
   modes
-    [ cmdGenerate
+    [ cmdBuild
+    , cmdGenerate
     , cmdClone
     ]
   &= summary versionString
@@ -58,7 +61,11 @@ versionString =
 
 -- | Data type representing the different command-line subcommands.
 data Cmd =
-    CmdGenerate
+    CmdBuild
+  { cmdUrl :: String
+  , cmdTarget :: FilePath
+  }
+  | CmdGenerate
   { cmdRefreshTime :: Maybe Int
   , cmdTarget :: FilePath
   }
@@ -66,6 +73,21 @@ data Cmd =
   { cmdUrl :: String
   }
   deriving (Data, Typeable)
+
+-- | Create a 'Build' command.
+cmdBuild :: Cmd
+cmdBuild = CmdBuild
+  { cmdUrl = def
+    &= argPos 0
+    &= typ "REPOSITORY_URL"
+  , cmdTarget = "_static"
+    &= help "Directory where generated HTML pages are put."
+    &= explicit
+    &= name "target"
+  } &= help
+      "Clone a repository and generate static HTML pages."
+    &= explicit
+    &= name "build"
 
 -- | Create a 'Generate' command.
 cmdGenerate :: Cmd
@@ -94,6 +116,13 @@ cmdClone = CmdClone
     &= name "clone"
 
 runCmd :: Cmd -> IO ()
+runCmd CmdBuild{..} = do
+  runCmd (CmdClone cmdUrl)
+  home <- getHomeDirectory
+  let dir = home </> ".hadley" </> "clone"
+  setCurrentDirectory dir
+  runCmd (CmdGenerate Nothing cmdTarget)
+
 runCmd CmdGenerate{..} = do
   let mrefresh = cmdRefreshTime
       target = cmdTarget
