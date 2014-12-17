@@ -3,6 +3,7 @@
 {-# LANGUAGE RecordWildCards #-}
 module Main (main) where
 
+import Control.Monad (unless)
 import Data.Default
 import Data.Text (Text)
 import qualified Data.Text.Lazy.IO as T
@@ -11,8 +12,8 @@ import Language.Haskell.Exts.SrcLoc (SrcSpan(..))
 import Language.Haskell.HLint3
 import Paths_hadley (version)
 import System.Console.CmdArgs.Implicit hiding (def)
-import System.Directory (createDirectoryIfMissing)
-import System.Exit (ExitCode)
+import System.Directory (createDirectoryIfMissing, getHomeDirectory)
+import System.Exit (exitFailure, ExitCode(..))
 import System.FilePath ((</>))
 import System.Process (readProcessWithExitCode)
 import Text.Blaze.Html5 (Html, (!))
@@ -36,11 +37,15 @@ getProject = return Project
   , projectCabal = "hadley.cabal"
   }
 
+------------------------------------------------------------------------------
+-- Command-line
+------------------------------------------------------------------------------
+
 main :: IO ()
 main = (runCmd =<<) $ cmdArgs $
   modes
     [ cmdGenerate
-    , cmdDummy
+    , cmdClone
     ]
   &= summary versionString
   &= program "hadley"
@@ -55,7 +60,9 @@ data Cmd =
     CmdGenerate
   { cmdRefreshTime :: Maybe Int
   }
-  | CmdDummy
+  | CmdClone
+  { cmdUrl :: String
+  }
   deriving (Data, Typeable)
 
 -- | Create a 'Generate' command.
@@ -70,17 +77,20 @@ cmdGenerate = CmdGenerate
     &= explicit
     &= name "generate"
 
--- | Create a 'Dummy' command (used to have two sub-commands).
-cmdDummy :: Cmd
-cmdDummy = CmdDummy
-    &= help "Dummy command"
+-- | Create a 'Command' command.
+cmdClone :: Cmd
+cmdClone = CmdClone
+  { cmdUrl = def
+    &= argPos 0
+    &= typ "REPOSITORY_URL"
+  } &= help "Clone a Git repository."
     &= explicit
-    &= name "dummy"
+    &= name "clone"
 
 runCmd :: Cmd -> IO ()
 runCmd CmdGenerate{..} = do
   let mrefresh = cmdRefreshTime
-  putStrLn "Hadley."
+  putStrLn "Generating HTML pages..."
   project@Project{..} <- getProject
   createDirectoryIfMissing True "_static"
 
@@ -169,8 +179,26 @@ runCmd CmdGenerate{..} = do
 
   -- Raw ls -la.
   writeFile ("_static" </> "raw" </> "ls-la.txt") (out ++ err)
+  putStrLn "Done."
 
-runCmd CmdDummy{..} = putStrLn "Dummy."
+runCmd CmdClone{..} = do
+  home <- getHomeDirectory
+  let dir = home </> ".hadley" </> "clone"
+  createDirectoryIfMissing True dir
+  putStrLn "Cloning..."
+  (code, out, err) <- readProcessWithExitCode
+    "git" ["clone", cmdUrl, dir] ""
+  case code of
+    ExitSuccess -> putStr out >> putStrLn "Done."
+    ExitFailure _ -> do
+      putStrLn "Clone failed. Output was:"
+      unless (null out) $ putStrLn out
+      unless (null err) $ putStrLn err
+      exitFailure
+
+------------------------------------------------------------------------------
+-- HTML
+------------------------------------------------------------------------------
 
 wrapReadme :: Maybe Int -> Project -> Html -> Html
 wrapReadme mrefresh Project{..} content = flip (document mrefresh projectName) (return ()) $ do
