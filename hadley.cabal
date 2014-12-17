@@ -10,6 +10,8 @@ author:              Vo Minh Thu
 maintainer:          thu@hypered.io
 build-type:          Simple
 
+data-files:            static/style.css
+
 executable hadley
   hs-source-dirs:      bin
   main-is:             hadley.hs

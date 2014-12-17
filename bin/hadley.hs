@@ -10,9 +10,10 @@ import qualified Data.Text.Lazy.IO as T
 import Data.Version (showVersion)
 import Language.Haskell.Exts.SrcLoc (SrcSpan(..))
 import Language.Haskell.HLint3
-import Paths_hadley (version)
+import Paths_hadley (getDataFileName, version)
 import System.Console.CmdArgs.Implicit hiding (def)
-import System.Directory (createDirectoryIfMissing, getHomeDirectory)
+import System.Directory
+  (copyFile, createDirectoryIfMissing, doesFileExist, getHomeDirectory)
 import System.Exit (exitFailure, ExitCode(..))
 import System.FilePath ((</>))
 import System.Process (readProcessWithExitCode)
@@ -59,6 +60,7 @@ versionString =
 data Cmd =
     CmdGenerate
   { cmdRefreshTime :: Maybe Int
+  , cmdTarget :: FilePath
   }
   | CmdClone
   { cmdUrl :: String
@@ -72,6 +74,10 @@ cmdGenerate = CmdGenerate
     &= help "Embed a HTTP meta tag with a refresh value."
     &= explicit
     &= name "refresh"
+  , cmdTarget = "_static"
+    &= help "Directory where generated HTML pages are put."
+    &= explicit
+    &= name "target"
   } &= help
       "Generate static HTML pages."
     &= explicit
@@ -90,12 +96,20 @@ cmdClone = CmdClone
 runCmd :: Cmd -> IO ()
 runCmd CmdGenerate{..} = do
   let mrefresh = cmdRefreshTime
+      target = cmdTarget
   putStrLn "Generating HTML pages..."
   project@Project{..} <- getProject
-  createDirectoryIfMissing True "_static"
+  createDirectoryIfMissing True target
+
+  -- Copy the CSS. Handle running `hadley` from source, of once installed
+  -- through Cabal.
+  e <- doesFileExist "static/style.css"
+  styleCss <- if e then return "static/style.css"
+                   else getDataFileName "static/style.css"
+  copyFile styleCss $ target </> "style.css"
 
   -- Made-up index.html.
-  T.writeFile ("_static" </> "index.html")
+  T.writeFile (target </> "index.html")
     $ renderHtml
     $ flip (document mrefresh projectName) (return ())
     $ do
@@ -122,48 +136,48 @@ runCmd CmdGenerate{..} = do
   content <- readFile projectREADME
 
   -- Render the README.
-  createDirectoryIfMissing True ("_static" </> projectREADME)
-  T.writeFile ("_static" </> projectREADME </> "index.html")
+  createDirectoryIfMissing True (target </> projectREADME)
+  T.writeFile (target </> projectREADME </> "index.html")
     $ renderHtml
     $ wrapReadme mrefresh project
     $ writeHtml def { writerHtml5 = True }
     $ readMarkdown def content
 
   -- Raw README.
-  createDirectoryIfMissing True ("_static" </> "raw")
-  writeFile ("_static" </> "raw" </> projectREADME) content
+  createDirectoryIfMissing True (target </> "raw")
+  writeFile (target </> "raw" </> projectREADME) content
 
   contentCabal <- readFile projectCabal
 
   -- Render the `.cabal` file.
-  createDirectoryIfMissing True ("_static" </> projectCabal)
-  T.writeFile ("_static" </> projectCabal </> "index.html")
+  createDirectoryIfMissing True (target </> projectCabal)
+  T.writeFile (target </> projectCabal </> "index.html")
     $ renderHtml
     $ wrapCabal mrefresh project
     $ H.br >> H.pre (H.code $ H.toHtml contentCabal)
 
   -- Raw `.cabal`.
-  createDirectoryIfMissing True ("_static" </> "raw")
-  writeFile ("_static" </> "raw" </> projectCabal) contentCabal
+  createDirectoryIfMissing True (target </> "raw")
+  writeFile (target </> "raw" </> projectCabal) contentCabal
 
   content' <- readFile ("bin" </> "hadley.hs")
 
   -- Render the script.
-  createDirectoryIfMissing True ("_static" </> "bin" </> "hadley.hs")
-  T.writeFile ("_static" </> "bin" </> "hadley.hs" </> "index.html")
+  createDirectoryIfMissing True (target </> "bin" </> "hadley.hs")
+  T.writeFile (target </> "bin" </> "hadley.hs" </> "index.html")
     $ renderHtml
     $ wrapHs mrefresh project
     $ H.br >> H.pre (H.code $ H.toHtml content')
 
   -- Raw script.
-  createDirectoryIfMissing True ("_static" </> "raw" </> "bin")
-  writeFile ("_static" </> "raw" </> "bin" </> "hadley.hs") content'
+  createDirectoryIfMissing True (target </> "raw" </> "bin")
+  writeFile (target </> "raw" </> "bin" </> "hadley.hs") content'
 
   -- HLint output.
   (flags, classify, hint) <- autoSettings
   Right m <- parseModuleEx flags "bin/hadley.hs" Nothing
-  createDirectoryIfMissing True ("_static" </> "hlint" </> "bin")
-  T.writeFile ("_static" </> "hlint" </> "bin/hadley.hs")
+  createDirectoryIfMissing True (target </> "hlint" </> "bin")
+  T.writeFile (target </> "hlint" </> "bin/hadley.hs")
     $ renderHtml
     $ renderIdeas mrefresh project
     $ applyHints classify hint [m]
@@ -172,13 +186,13 @@ runCmd CmdGenerate{..} = do
     "ls" ["-la"] ""
 
   -- Render ls -la.
-  T.writeFile ("_static" </> "ls-la.html")
+  T.writeFile (target </> "ls-la.html")
     $ renderHtml
     $ wrapCommand mrefresh project
     $ H.br >> H.pre (H.code $ H.toHtml $ out ++ err)
 
   -- Raw ls -la.
-  writeFile ("_static" </> "raw" </> "ls-la.txt") (out ++ err)
+  writeFile (target </> "raw" </> "ls-la.txt") (out ++ err)
   putStrLn "Done."
 
 runCmd CmdClone{..} = do
