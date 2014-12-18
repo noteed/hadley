@@ -13,5 +13,5 @@ images/hadley/hlint-1.9.13:
 	rm container_id
 
 .hadley_touched: images/hadley/Dockerfile images/hadley/hadley images/hadley/hlint-1.9.13
-	docker build -t images.reesd.com/reesd/hadley images/hadley
+	docker build -t noteed/hadley images/hadley
 	touch $@
