@@ -5,7 +5,7 @@
 mkdir -p _static
 docker run \
   -v `pwd`/_static:/artifacts \
-  -t -i images.reesd.com/reesd/hadley \
+  -t -i noteed/hadley \
   sh -c \
     'hadley clone https://github.com/noteed/hadley.git ;
      cd /home/gusdev/.hadley/clone ;
