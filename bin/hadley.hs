@@ -17,7 +17,7 @@ import System.Directory
   , setCurrentDirectory
   )
 import System.Exit (exitFailure, ExitCode(..))
-import System.FilePath ((</>))
+import System.FilePath ((</>), (<.>))
 import System.Process (readProcessWithExitCode)
 import Text.Blaze.Html5 (Html, (!))
 import qualified Text.Blaze.Html5 as H
@@ -38,6 +38,12 @@ getProject = return Project
   { projectName = "Hadley"
   , projectREADME = "README.md"
   , projectCabal = "hadley.cabal"
+  }
+
+data Conf = Conf
+  { confProject :: Project
+  , confTargetDirectory :: FilePath
+  , confRefresh :: Maybe Int
   }
 
 ------------------------------------------------------------------------------
@@ -161,6 +167,10 @@ runCmd CmdGenerate{..} = do
         H.a ! A.href "ls-la.html" $ H.code "ls -la"
         " "
         H.a ! A.href "/raw/ls-la.txt" $ "raw"
+      H.div $ do
+        H.a ! A.href "cabal-configure.html" $ H.code "cabal configure --enable-tests"
+        " "
+        H.a ! A.href "/raw/cabal-configure.txt" $ "raw"
 
   content <- readFile projectREADME
 
@@ -211,18 +221,14 @@ runCmd CmdGenerate{..} = do
     $ renderIdeas mrefresh project
     $ applyHints classify hint [m]
 
-  (code, out, err) <- readProcessWithExitCode
-    "ls" ["-la"] ""
+  let conf = Conf project target mrefresh
 
-  -- Render ls -la.
-  T.writeFile (target </> "ls-la.html")
-    $ renderHtml
-    $ wrapCommand mrefresh project
-    $ H.br >> H.pre (H.code $ H.toHtml $ out ++ err)
+  generateCommand conf "ls" ["-la"] ""
 
-  -- Raw ls -la.
-  writeFile (target </> "raw" </> "ls-la.txt") (out ++ err)
-  putStrLn "Done."
+  generateCommand conf "cabal" ["update"] ""
+  generateCommand conf "cabal" ["install", "--only-dependencies", "--enable-tests"] ""
+  generateCommand conf "cabal" ["configure", "--enable-tests"] ""
+  generateCommand conf "cabal" ["build"] ""
 
 runCmd CmdClone{..} = do
   home <- getHomeDirectory
@@ -235,6 +241,32 @@ runCmd CmdClone{..} = do
     ExitSuccess -> putStr out >> putStrLn "Done."
     ExitFailure _ -> do
       putStrLn "Clone failed. Output was:"
+      unless (null out) $ putStrLn out
+      unless (null err) $ putStrLn err
+      exitFailure
+
+generateCommand :: Conf -> String -> [String] -> String -> IO ()
+generateCommand Conf{..} cmd arguments input = do
+  let project = confProject
+      target = confTargetDirectory
+      mrefresh = confRefresh
+      filename = cmd ++ case arguments of {x:_ -> "-" ++ x ; _ -> ""}
+  putStrLn $ "Running " ++ filename ++ "..."
+  (code, out, err) <- readProcessWithExitCode
+    cmd arguments input
+
+  -- Render the command output.
+  T.writeFile (target </> filename <.> "html")
+    $ renderHtml
+    $ wrapCommand mrefresh project
+    $ H.br >> H.pre (H.code $ H.toHtml $ out ++ err)
+
+  -- Raw command output.
+  writeFile (target </> "raw" </> filename <.> "txt") (out ++ err)
+  case code of
+    ExitSuccess -> putStrLn "Done."
+    ExitFailure _ -> do
+      putStrLn "Command exited with non-zero code."
       unless (null out) $ putStrLn out
       unless (null err) $ putStrLn err
       exitFailure

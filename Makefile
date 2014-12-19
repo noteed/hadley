@@ -1,6 +1,6 @@
 all: .hadley_touched
 
-dist/build/hadley/hadley:
+dist/build/hadley/hadley: bin/hadley.hs
 	./build.sh
 
 images/hadley/hadley: dist/build/hadley/hadley
