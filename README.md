@@ -8,7 +8,7 @@ Hadley is in development and can only render itself. Current pages include:
 - The Haskell code,
 - The output of HLint when run over Hadley's script,
 - The Cabal file,
-- Process output.
+- Processes output (in particular `cabal build`).
 
 ## Docker images
 

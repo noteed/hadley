@@ -133,7 +133,16 @@ runCmd CmdGenerate{..} = do
   let mrefresh = cmdRefreshTime
       target = cmdTarget
   putStrLn "Generating HTML pages..."
+
   project@Project{..} <- getProject
+  let commands =
+        [ ("ls", ["-la"])
+        , ("cabal", ["update"])
+        , ("cabal", ["install", "--only-dependencies", "--enable-tests"])
+        , ("cabal", ["configure", "--enable-tests"])
+        , ("cabal", ["build"])
+        ]
+
   createDirectoryIfMissing True target
 
   -- Copy the CSS. Handle running `hadley` from source, of once installed
@@ -163,14 +172,8 @@ runCmd CmdGenerate{..} = do
         H.a ! A.href "hadley.cabal" $ "hadley.cabal"
         " "
         H.a ! A.href "/raw/hadley.cabal" $ "raw"
-      H.div $ do
-        H.a ! A.href "ls-la.html" $ H.code "ls -la"
-        " "
-        H.a ! A.href "/raw/ls-la.txt" $ "raw"
-      H.div $ do
-        H.a ! A.href "cabal-configure.html" $ H.code "cabal configure --enable-tests"
-        " "
-        H.a ! A.href "/raw/cabal-configure.txt" $ "raw"
+
+      mapM_ (uncurry indexCommand) commands
 
   content <- readFile projectREADME
 
@@ -223,12 +226,7 @@ runCmd CmdGenerate{..} = do
 
   let conf = Conf project target mrefresh
 
-  generateCommand conf "ls" ["-la"] ""
-
-  generateCommand conf "cabal" ["update"] ""
-  generateCommand conf "cabal" ["install", "--only-dependencies", "--enable-tests"] ""
-  generateCommand conf "cabal" ["configure", "--enable-tests"] ""
-  generateCommand conf "cabal" ["build"] ""
+  mapM_ (\(a, b) -> generateCommand conf a b "") commands
 
 runCmd CmdClone{..} = do
   home <- getHomeDirectory
@@ -270,6 +268,14 @@ generateCommand Conf{..} cmd arguments input = do
       unless (null out) $ putStrLn out
       unless (null err) $ putStrLn err
       exitFailure
+
+indexCommand cmd arguments = do
+  let filename = cmd ++ case arguments of {x:_ -> "-" ++ x ; _ -> ""}
+  H.div $ do
+    H.a ! A.href (H.toValue $ filename ++ ".html") $
+      H.code $ H.toHtml $ unwords $ cmd : arguments
+    " "
+    H.a ! A.href (H.toValue $ "/raw/" ++ filename ++".txt") $ "raw"
 
 ------------------------------------------------------------------------------
 -- HTML
