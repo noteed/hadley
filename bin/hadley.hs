@@ -136,11 +136,11 @@ runCmd CmdGenerate{..} = do
 
   project@Project{..} <- getProject
   let commands =
-        [ ("ls", ["-la"])
-        , ("cabal", ["update"])
+        [ ("cabal", ["update"])
         , ("cabal", ["install", "--only-dependencies", "--enable-tests"])
         , ("cabal", ["configure", "--enable-tests"])
         , ("cabal", ["build"])
+        , ("cabal", ["haddock", "--executables"])
         ]
 
   createDirectoryIfMissing True target
@@ -257,7 +257,7 @@ generateCommand Conf{..} cmd arguments input = do
   T.writeFile (target </> filename <.> "html")
     $ renderHtml
     $ wrapCommand mrefresh project
-    $ H.br >> H.pre (H.code $ H.toHtml $ out ++ err)
+    $ htmlProcess cmd arguments input code out err
 
   -- Raw command output.
   writeFile (target </> "raw" </> filename <.> "txt") (out ++ err)
@@ -269,6 +269,7 @@ generateCommand Conf{..} cmd arguments input = do
       unless (null err) $ putStrLn err
       exitFailure
 
+indexCommand :: String -> [String] -> Html
 indexCommand cmd arguments = do
   let filename = cmd ++ case arguments of {x:_ -> "-" ++ x ; _ -> ""}
   H.div $ do
