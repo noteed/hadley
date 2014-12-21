@@ -1,4 +1,4 @@
-all: .hadley_touched
+all: .hadley_touched .stack_pandoc_touched
 
 dist/build/hadley/hadley: bin/hadley.hs
 	./build.sh
@@ -14,4 +14,8 @@ images/hadley/hlint-1.9.13:
 
 .hadley_touched: images/hadley/Dockerfile images/hadley/hadley images/hadley/hlint-1.9.13
 	docker build -t noteed/hadley images/hadley
+	touch $@
+
+.stack_pandoc_touched:
+	docker build -t images.reesd.com/reesd/stack-pandoc images/stack-pandoc
 	touch $@
