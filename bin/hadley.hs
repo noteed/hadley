@@ -141,7 +141,9 @@ runCmd CmdGenerate{..} = do
         , ("cabal", ["install", "--only-dependencies", "--enable-tests"])
         , ("cabal", ["configure", "--enable-tests"])
         , ("cabal", ["build"])
-        , ("cabal", ["haddock", "--executables"])
+        , ("cabal", ["haddock", "--executables", "--hyperlink-source"])
+          -- TODO Link to Hadley-rendered pages instead.
+          -- TODO Paths_hadley has a "source" link that leads to a 404.
         ]
 
   createDirectoryIfMissing True target
