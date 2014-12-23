@@ -3,7 +3,7 @@
 {-# LANGUAGE RecordWildCards #-}
 module Main (main) where
 
-import Control.Monad (unless)
+import Control.Monad (unless, when)
 import Data.Default
 import Data.Text (Text)
 import qualified Data.Text.Lazy.IO as T
@@ -13,7 +13,8 @@ import Language.Haskell.HLint3
 import Paths_hadley (getDataFileName, version)
 import System.Console.CmdArgs.Implicit hiding (def)
 import System.Directory
-  ( copyFile, createDirectoryIfMissing, doesFileExist, getHomeDirectory
+  ( copyFile, createDirectoryIfMissing, doesDirectoryExist, doesFileExist
+  , getHomeDirectory, removeDirectoryRecursive, renameDirectory
   , setCurrentDirectory
   )
 import System.Exit (exitFailure, ExitCode(..))
@@ -175,6 +176,9 @@ runCmd CmdGenerate{..} = do
 
       mapM_ (uncurry indexCommand) commands
 
+      H.div $ do
+        H.a ! A.href "/doc" $ "Documentation"
+
   content <- readFile projectREADME
 
   -- Render the README.
@@ -227,6 +231,9 @@ runCmd CmdGenerate{..} = do
   let conf = Conf project target mrefresh
 
   mapM_ (\(a, b) -> generateCommand conf a b "") commands
+  e' <- doesDirectoryExist (target </> "doc")
+  when e' $ removeDirectoryRecursive (target </> "doc")
+  renameDirectory "dist/doc/html/hadley/hadley" (target </> "doc")
 
 runCmd CmdClone{..} = do
   home <- getHomeDirectory
