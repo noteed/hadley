@@ -8,5 +8,5 @@ docker run \
   sh -c \
     'cd hadley ;
     runghc -idist/build/autogen bin/hadley.hs clone https://github.com/noteed/hadley.git ;
-    runghc -idist/build/autogen bin/hadley.hs generate --target /artifacts ;
+    runghc -idist/build/autogen bin/hadley.hs generate --source /home/gusdev/.hadley/clone --target /artifacts ;
     '

@@ -74,6 +74,7 @@ data Cmd =
   }
   | CmdGenerate
   { cmdRefreshTime :: Maybe Int
+  , cmdSource :: FilePath
   , cmdTarget :: FilePath
   }
   | CmdClone
@@ -103,6 +104,10 @@ cmdGenerate = CmdGenerate
     &= help "Embed a HTTP meta tag with a refresh value."
     &= explicit
     &= name "refresh"
+  , cmdSource = "."
+    &= help "Source directory to process."
+    &= explicit
+    &= name "source"
   , cmdTarget = "_static"
     &= help "Directory where generated HTML pages are put."
     &= explicit
@@ -127,10 +132,10 @@ runCmd CmdBuild{..} = do
   runCmd (CmdClone cmdUrl)
   home <- getHomeDirectory
   let dir = home </> ".hadley" </> "clone"
-  setCurrentDirectory dir
-  runCmd (CmdGenerate Nothing cmdTarget)
+  runCmd (CmdGenerate Nothing dir cmdTarget)
 
 runCmd CmdGenerate{..} = do
+  setCurrentDirectory cmdSource
   let mrefresh = cmdRefreshTime
       target = cmdTarget
   putStrLn "Generating HTML pages..."
@@ -178,7 +183,7 @@ runCmd CmdGenerate{..} = do
 
       mapM_ (uncurry indexCommand) commands
 
-      H.div $ do
+      H.div $
         H.a ! A.href "/doc" $ "Documentation"
 
   content <- readFile projectREADME
@@ -235,7 +240,13 @@ runCmd CmdGenerate{..} = do
   mapM_ (\(a, b) -> generateCommand conf a b "") commands
   e' <- doesDirectoryExist (target </> "doc")
   when e' $ removeDirectoryRecursive (target </> "doc")
-  renameDirectory "dist/doc/html/hadley/hadley" (target </> "doc")
+  -- Use cp -r instead of renameDirectory because of the limitation
+  -- "rename: unsupported operation (Invalid cross-device link)"
+  -- when using Docker volumes.
+  -- renameDirectory "dist/doc/html/hadley/hadley" (target </> "doc")
+  (code, out, err) <- readProcessWithExitCode
+    "cp" ["-r", "dist/doc/html/hadley/hadley", target </> "doc"] ""
+  return ()
 
 runCmd CmdClone{..} = do
   home <- getHomeDirectory
