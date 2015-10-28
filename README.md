@@ -26,7 +26,7 @@ image](https://github.com/noteed/reesd-stack) and can be built with
 Hadley itself is also packaged as a Docker image. The Dockerfile context is
 `images/hadley`. See the `run-image.sh` script to see how to use it. To build
 the image, it is easier to use the provided `Makefile` as some files must be
-generated ant copied to the context.
+generated and copied to the context.
 
 ## Halcyon
 
