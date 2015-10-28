@@ -14,7 +14,7 @@ import Paths_hadley (getDataFileName, version)
 import System.Console.CmdArgs.Implicit hiding (def)
 import System.Directory
   ( copyFile, createDirectoryIfMissing, doesDirectoryExist, doesFileExist
-  , getHomeDirectory, removeDirectoryRecursive, renameDirectory
+  , getHomeDirectory, removeDirectoryRecursive
   , setCurrentDirectory
   )
 import System.Exit (exitFailure, ExitCode(..))
@@ -190,11 +190,13 @@ runCmd CmdGenerate{..} = do
 
   -- Render the README.
   createDirectoryIfMissing True (target </> projectREADME)
-  T.writeFile (target </> projectREADME </> "index.html")
-    $ renderHtml
-    $ wrapReadme mrefresh project
-    $ writeHtml def { writerHtml5 = True }
-    $ readMarkdown def content
+  case readMarkdown def content of
+    Left err -> error (show err)
+    Right doc -> T.writeFile (target </> projectREADME </> "index.html")
+      $ renderHtml
+      $ wrapReadme mrefresh project
+      $ writeHtml def { writerHtml5 = True }
+      $ doc
 
   -- Raw README.
   createDirectoryIfMissing True (target </> "raw")
