@@ -151,14 +151,14 @@ runCmd CmdGenerate{..} = do
           -- TODO Paths_hadley has a "source" link that leads to a 404.
         ]
 
-  createDirectoryIfMissing True target
+  createDirectoryIfMissing True (target </> "css")
 
-  -- Copy the CSS. Handle running `hadley` from source, of once installed
+  -- Copy the CSS. Handle running `hadley` from source, or once installed
   -- through Cabal.
-  e <- doesFileExist "static/style.css"
-  styleCss <- if e then return "static/style.css"
-                   else getDataFileName "static/style.css"
-  copyFile styleCss $ target </> "style.css"
+  e <- doesFileExist "static/css/style.css"
+  styleCss <- if e then return "static/css/style.css"
+                   else getDataFileName "static/css/style.css"
+  copyFile styleCss $ target </> "css" </> "style.css"
 
   -- Made-up index.html.
   T.writeFile (target </> "index.html")
@@ -373,7 +373,7 @@ document mrefresh title content menu = do
   html_
   H.meta ! A.charset "utf-8"
   H.title $ H.toHtml title
-  H.style "@import url(/style.css);"
+  H.style "@import url(/css/style.css);"
   maybe
     (return ())
     (\r -> H.meta ! A.httpEquiv "refresh" ! A.content (H.toValue $ show r))
