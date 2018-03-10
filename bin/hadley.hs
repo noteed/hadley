@@ -7,6 +7,7 @@ module Main (main) where
 import Control.Monad (unless, when)
 import Data.Default
 import Data.Text (Text)
+import qualified Data.Text.IO as TIO
 import qualified Data.Text.Lazy.IO as T
 import Data.Version (showVersion)
 import Language.Haskell.Exts.SrcLoc (SrcSpan(..))
@@ -26,8 +27,9 @@ import qualified Text.Blaze.Html5 as H
 import qualified Text.Blaze.Html5.Attributes as A
 import Text.Blaze.Html.Renderer.Text (renderHtml)
 -- import Text.Blaze.Html.Renderer.Pretty (renderHtml)
-import Text.Pandoc (readMarkdown, writeHtml)
-import Text.Pandoc.Options (writerHtml5)
+import Text.Pandoc (readMarkdown)
+import Text.Pandoc.Class (runIOorExplode)
+import Text.Pandoc.Writers (writeHtml5)
 
 data Project = Project
   { projectName :: Text
@@ -187,21 +189,21 @@ runCmd CmdGenerate{..} = do
       H.div $
         H.a ! A.href "/doc" $ "Documentation"
 
-  content <- readFile projectREADME
+  content <- TIO.readFile projectREADME
 
   -- Render the README.
   createDirectoryIfMissing True (target </> projectREADME)
-  case readMarkdown def content of
-    Left err -> error (show err)
-    Right doc -> T.writeFile (target </> projectREADME </> "index.html")
-      $ renderHtml
-      $ wrapReadme mrefresh project
-      $ writeHtml def { writerHtml5 = True }
-      $ doc
+  doc' <- runIOorExplode $ do
+    doc <- readMarkdown def content
+    writeHtml5 def doc
+  T.writeFile (target </> projectREADME </> "index.html")
+    $ renderHtml
+    $ wrapReadme mrefresh project
+    $ doc'
 
   -- Raw README.
   createDirectoryIfMissing True (target </> "raw")
-  writeFile (target </> "raw" </> projectREADME) content
+  TIO.writeFile (target </> "raw" </> projectREADME) content
 
   contentCabal <- readFile projectCabal
 
@@ -335,7 +337,7 @@ htmlIdea Idea{..} = do
   H.div $ "Found: " >> H.toHtml ideaFrom
   H.div $ "Why not: " >> H.toHtml (show ideaTo)
   H.div $ H.toHtml $ show ideaNote
-  H.div $ H.toHtml ideaModule >> H.toHtml ideaDecl
+  H.div $ H.toHtml (show ideaModule) >> H.toHtml (show ideaDecl)
 
 htmlSrcSpan :: SrcSpan -> Html
 htmlSrcSpan SrcSpan{..} =
