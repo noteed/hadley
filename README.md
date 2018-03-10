@@ -10,8 +10,6 @@ Hadley is in development and can only render itself. Current pages include:
 - The Cabal file,
 - Processes output (in particular `cabal build`).
 
-To build Hadley, either use the Docker-based approach, or the Halcyon-based
-one.
 
 ## Docker images
 
@@ -28,14 +26,6 @@ Hadley itself is also packaged as a Docker image. The Dockerfile context is
 the image, it is easier to use the provided `Makefile` as some files must be
 generated and copied to the context.
 
-## Halcyon
-
-Constraints files are given for both GHC 7.4.2 and GHC 7.6.3. For e.g. 7.6.3,
-use Halcyon as follow:
-
-    > /app/halcyon/halcyon install . \
-        --sandbox-extra-apps=.halcyon-ghc-7.6.3/sandbox-extra-apps \
-        --constraints=.halcyon-ghc-7.6.3/constraints
 
 ## 80 columns
 
