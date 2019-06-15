@@ -11,11 +11,18 @@ Hadley is in development and can only render itself. Current pages include:
 - Processes output (in particular `cabal build`).
 
 
+## Building
+
+```
+$ nix-build release.nix
+```
+
+
 ## Docker images
 
 Hadley itself and the build process use Docker images.
 
-The build image context is `images/stack-pandoc`, which itslef depends on
+The build image context is `images/stack-pandoc`, which itself depends on
 [Reesd stack image](https://github.com/noteed/reesd-stack). It can be built
 with:
 
@@ -23,7 +30,7 @@ with:
 
 (Rename the image and the `FROM` instruction as appropriate.)
 
-THe Hadley image context is `images/hadley`. See the `run-image.sh` script to
+The Hadley image context is `images/hadley`. See the `run-image.sh` script to
 see how to use it. To build the image, it is easier to use the provided
 `Makefile` as some files must be generated and copied to the context.
 

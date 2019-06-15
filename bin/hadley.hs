@@ -67,7 +67,8 @@ main = (runCmd =<<) $ cmdArgs $
 -- | String with the program name, version and copyright.
 versionString :: String
 versionString =
-  "hadley " ++ showVersion version ++ " - Copyright (c) 2014 Vo Minh Thu."
+  "hadley " ++ showVersion version ++
+  " - Copyright (c) 2014 Vo Minh Thu, 2019 Hypered"
 
 -- | Data type representing the different command-line subcommands.
 data Cmd =
