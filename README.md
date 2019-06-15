@@ -18,6 +18,15 @@ $ nix-build release.nix
 ```
 
 
+## Running
+
+```
+$ ./generate.sh
+```
+
+The files are generated in the `_site/` directory.
+
+
 ## Docker images
 
 Hadley itself and the build process use Docker images.

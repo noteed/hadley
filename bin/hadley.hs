@@ -92,7 +92,7 @@ cmdBuild = CmdBuild
   { cmdUrl = def
     &= argPos 0
     &= typ "REPOSITORY_URL"
-  , cmdTarget = "_static"
+  , cmdTarget = "_site"
     &= help "Directory where generated HTML pages are put."
     &= explicit
     &= name "target"
@@ -112,7 +112,7 @@ cmdGenerate = CmdGenerate
     &= help "Source directory to process."
     &= explicit
     &= name "source"
-  , cmdTarget = "_static"
+  , cmdTarget = "_site"
     &= help "Directory where generated HTML pages are put."
     &= explicit
     &= name "target"
@@ -145,7 +145,10 @@ runCmd CmdGenerate{..} = do
   putStrLn "Generating HTML pages..."
 
   project@Project{..} <- getProject
-  let commands =
+  let commands = [] {- TODO
+        This is commented out because cabal is marked as broken
+        when entering nix-shell with cabal as an additional
+        dependency.
         [ ("cabal", ["update"])
         , ("cabal", ["install", "--only-dependencies", "--enable-tests"])
         , ("cabal", ["configure", "--enable-tests"])
@@ -153,7 +156,7 @@ runCmd CmdGenerate{..} = do
         , ("cabal", ["haddock", "--executables", "--hyperlink-source"])
           -- TODO Link to Hadley-rendered pages instead.
           -- TODO Paths_hadley has a "source" link that leads to a 404.
-        ]
+        ] -}
 
   createDirectoryIfMissing True (target </> "css")
 
