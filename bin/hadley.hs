@@ -10,8 +10,8 @@ import Data.Text (Text)
 import qualified Data.Text.IO as TIO
 import qualified Data.Text.Lazy.IO as T
 import Data.Version (showVersion)
-import Language.Haskell.Exts.SrcLoc (SrcSpan(..))
-import Language.Haskell.HLint3
+import GHC.Types.SrcLoc (srcSpanFileName_maybe, srcSpanStart, SrcSpan(..))
+import Language.Haskell.HLint
 import Paths_hadley (getDataFileName, version)
 import System.Console.CmdArgs.Implicit hiding (def)
 import System.Directory
@@ -344,11 +344,10 @@ htmlIdea Idea{..} = do
   H.div $ H.toHtml (show ideaModule) >> H.toHtml (show ideaDecl)
 
 htmlSrcSpan :: SrcSpan -> Html
-htmlSrcSpan SrcSpan{..} =
+htmlSrcSpan srcSpan =
   H.code $ do
-    H.toHtml srcSpanFilename -- TODO Link.
-    ":" >> H.toHtml (show srcSpanStartLine)
-    ":" >> H.toHtml (show srcSpanStartColumn)
+    H.toHtml . show $ srcSpanFileName_maybe srcSpan -- TODO Link.
+    ":" >> H.toHtml (show $ srcSpanStart srcSpan)
 
 wrapCabal :: Maybe Int -> Project -> Html -> Html
 wrapCabal mrefresh Project{..} content = flip (document mrefresh projectName) (return ()) $ do

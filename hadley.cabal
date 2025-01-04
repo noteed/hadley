@@ -21,7 +21,7 @@ executable hadley
                        data-default,
                        directory,
                        filepath,
-                       haskell-src-exts,
+                       ghc-lib-parser,
                        hlint,
                        pandoc,
                        process,

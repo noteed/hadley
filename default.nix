@@ -1,5 +1,5 @@
 { mkDerivation, base, blaze-html, cmdargs, data-default, directory
-, filepath, haskell-src-exts, hlint, pandoc, process, stdenv, text
+, filepath, ghc-lib-parser, hlint, lib, pandoc, process, text
 }:
 mkDerivation {
   pname = "hadley";
@@ -10,8 +10,9 @@ mkDerivation {
   enableSeparateDataOutput = true;
   executableHaskellDepends = [
     base blaze-html cmdargs data-default directory filepath
-    haskell-src-exts hlint pandoc process text
+    ghc-lib-parser hlint pandoc process text
   ];
   description = "Hadley renders static pages for Haskell projects";
-  license = stdenv.lib.licenses.bsd3;
+  license = lib.licenses.bsd3;
+  mainProgram = "hadley";
 }

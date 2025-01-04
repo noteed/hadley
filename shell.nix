@@ -1,7 +1,7 @@
 let
   pkgs = import <nixpkgs> {
   };
-  hspkgs = pkgs.haskell.packages.ghc843;
+  hspkgs = pkgs.haskell.packages.ghc810;
 
   f = import ./default.nix;
   drv = hspkgs.callPackage f {};
